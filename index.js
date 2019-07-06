@@ -44,12 +44,14 @@ io.on('connection',(client) => {
     console.log('received error from client:', client.id)
     console.log(err)
   })
+
+  rc522(function(rfidSerialNumber){
+      io.emit('tap', {
+          machine: 1,
+          uuid: rfidSerialNumber
+      })
+  });
 })
 
-rc522(function(rfidSerialNumber){
-    io.emit('tap', {
-        machine: 1,
-        uuid: rfidSerialNumber
-    })
-});
+
 
