@@ -1,5 +1,9 @@
 var socket = io('http://192.168.0.127:3000');
 
+socket.on('tap', function(data){
+    console.log(data);
+});
+
 const Login = {
     data: function(){
         return{

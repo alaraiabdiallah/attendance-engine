@@ -1,8 +1,8 @@
-const express = require('express');
-const app = express();
-const server = require('http').createServer(app);
-const io = require('socket.io')(server);
-const rc522 = require("rc522");
+var express = require('express');
+var app = express();
+var server = require('http').createServer(app);
+var io = require('socket.io')(server);
+var rc522 = require("rc522");
 var db = require('./db');
 
 app.use(express.static('public'));
@@ -25,9 +25,6 @@ app.get('/hallo',(req,res)=>{
     res.send("hallo");
 })
 
-
-
-
 io.on('connection',(client) => {
 
   console.log("Connected with id: "+client.id);
@@ -45,13 +42,15 @@ io.on('connection',(client) => {
     console.log(err)
   })
 
-  rc522(function(rfidSerialNumber){
-      io.emit('tap', {
-          machine: 1,
-          uuid: rfidSerialNumber
-      })
-  });
 })
+
+rc522(function(rfidSerialNumber){
+  console.log(rfidSerialNumber);  
+  io.emit('tap', {
+        machine: 1,
+        uuid: rfidSerialNumber
+    })
+});
 
 
 
