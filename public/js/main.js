@@ -1,8 +1,26 @@
-var socket = io('http://192.168.0.127:3000');
+var socket = io('//');
+
+window.attFlag;
 
 socket.on('tap', function(data){
     console.log(data);
 });
+
+var sAudio = new Audio('/sound/success_sfx.mp3');
+var eAudio = new Audio('/sound/error_sfx.mp3');
+
+function logAtt(id,callback){
+    return new Promise((resolve,reject) => {
+        window.fetch('/person/'+id+'/logs').then(res => res.json())
+        .then(res =>{
+            if(res.success == true)
+                return resolve(res);
+            else
+                return reject("something wrong");
+        })
+        .then(callback).catch(() => reject("Something wrong"));
+    })
+}
 
 const Login = {
     data: function(){
@@ -30,13 +48,35 @@ const Person = {
         }
     }, 
     methods: {
-        savePerson: function(event){
-            console.log(this.name);
+        savePerson: function(){
+            let params = { uuid: this.uuid, name: this.name };
+            window.fetch('/person',{
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(params)
+            }).then(res => {
+                if(res.status == 200)
+                    return res.json();
+                throw "Gagal save data";
+            })
+            .then(res => {
+                if(res.success)
+                    alert('Berhasil save data')
+            })
+            .catch(e => alert(e))
+        },
+        inputChange: function(data){
+            this.uuid = data.uuid
         }
     },
     mounted(){
+        var t = this;
+        window.attFlag = "person-data"
         socket.on('tap', function(data){
-            this.uuid = data.uuid;
+            if(window.attFlag == "person-data")
+                t.inputChange(data);
         });
     },
     template: `
@@ -48,10 +88,65 @@ const Person = {
     `
 }
 
+const Logs = {
+    data: function(){
+        return{
+            logs:[],
+        }
+    }, 
+    methods: {
+        getPerson: function(id){
+            window.fetch('/person/'+id)
+            .then(res => {
+                if(res.status == 200) 
+                    return res.json();
+                throw "Error";
+            })
+            .then((data) => {
+                return logAtt(id,(res) => {
+                    sAudio.play();
+                    this.getLogs();
+                });
+            })
+            .catch(e => {
+                eAudio.play();
+                console.error(e);
+            })
+        },
+
+        getLogs: function(){
+            window.fetch('/att_logs')
+            .then(res => res.json())
+            .then((res) => this.logs = res)
+            .catch(console.error);
+        },
+    },
+    mounted(){
+        var t = this;
+        window.attFlag = "att_logs";
+        this.getLogs();
+        socket.on('tap', function(data){
+            if(window.attFlag == "att_logs")
+                t.getPerson(data.uuid);
+        });
+    },
+    template: `
+        <div>
+            <h2>Logs</h2>
+            <ul>
+            <li v-for="log in logs">
+                {{ log.name }} did attendance at {{ new Date(log.log_time) }}
+            </li>
+            </ul>
+        </div>
+    `
+}
+
 const routes = [
   { path: '/', component: Login },
   { path: '/login', component: Login },
   { path: '/person', component: Person },
+  { path: '/logs', component: Logs },
 ]
 
 const router = new VueRouter({
